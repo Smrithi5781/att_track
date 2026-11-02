@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2563eb">
+  <title>AttendEase — Attendance tracker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --page: #f5f8fc;
+      --green: #15803d;
+      --green-bg: #dcfce7;
+      --red: #b91c1c;
+      --red-bg: #fee2e2;
+      --shadow: 0 8px 26px rgb(15 23 42 / 5%);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--page); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    button, input, select, textarea { font: inherit; }
+    button, select { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid #93c5fd;
+      outline-offset: 2px;
+    }
+    button:disabled { cursor: not-allowed; opacity: .6; }
+    .topbar { min-height: 70px; padding: 12px clamp(14px, 4vw, 48px); display: flex; align-items: center; justify-content: space-between; gap: 14px; background: white; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; color: white; background: var(--blue); font-size: 19px; font-weight: 800; }
+    .brand-name { font-size: 20px; font-weight: 750; letter-spacing: -.03em; }
+    .top-user { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+    .user-name { max-width: 260px; overflow-wrap: anywhere; font-weight: 650; }
+    .page { width: min(1120px, 100%); margin: 0 auto; padding: 30px 20px 46px; }
+    .login-wrap { max-width: 470px; margin: 36px auto; }
+    .card { padding: 24px; background: white; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+    .login-card { padding: clamp(22px, 5vw, 34px); }
+    h1, h2, p { margin-top: 0; }
+    h1 { margin-bottom: 8px; font-size: clamp(26px, 4vw, 32px); line-height: 1.2; letter-spacing: -.035em; }
+    h2 { margin-bottom: 14px; font-size: 20px; letter-spacing: -.02em; }
+    .intro, .muted, .field-hint { color: var(--muted); }
+    .intro { margin-bottom: 24px; }
+    .field { min-width: 0; display: grid; gap: 6px; margin-bottom: 14px; }
+    label { font-weight: 650; }
+    input, select, textarea { width: 100%; min-width: 0; min-height: 44px; padding: 9px 12px; color: var(--ink); background: white; border: 1px solid #cbd5e1; border-radius: 10px; }
+    textarea { min-height: 112px; resize: vertical; }
+    input::placeholder, textarea::placeholder { color: #94a3b8; }
+    .field-hint { margin: -5px 0 14px; font-size: 13px; }
+    .button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 7px; padding: 9px 14px; border: 1px solid transparent; border-radius: 10px; color: var(--ink); background: #f1f5f9; font-weight: 650; text-align: center; text-decoration: none; transition: background .15s, border-color .15s; }
+    .button:hover { background: #e2e8f0; }
+    .button-primary { color: white; background: var(--blue); }
+    .button-primary:hover { background: var(--blue-dark); }
+    .button-outline { background: white; border-color: var(--line); }
+    .button-outline:hover { background: #f8fafc; }
+    .button-danger { color: var(--red); background: white; border-color: #fecaca; }
+    .button-danger:hover { background: #fff1f2; }
+    .button-small { min-height: 36px; padding: 6px 10px; font-size: 14px; }
+    .button-block { width: 100%; }
+    .demo-note { margin: 20px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
+    .dashboard-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    .dashboard-head p { margin: 0; color: var(--muted); }
+    .toolbar, .toolbar-group, .actions, .inline-field { display: flex; align-items: end; gap: 12px; }
+    .toolbar { flex-wrap: wrap; justify-content: space-between; margin-bottom: 18px; }
+    .toolbar-group { flex-wrap: wrap; }
+    .toolbar .field { width: 180px; margin: 0; }
+    .toolbar .field.date-field { width: 175px; }
+    .toolbar .threshold-field { width: 145px; }
+    .toolbar .field label { font-size: 13px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .summary-card { padding: 18px; }
+    .summary-label { margin-bottom: 6px; color: var(--muted); font-size: 14px; }
+    .summary-value { font-size: 27px; line-height: 1.2; font-weight: 750; letter-spacing: -.03em; overflow-wrap: anywhere; }
+    .content-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(290px, .85fr); gap: 18px; align-items: start; }
+    .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .section-heading h2 { margin-bottom: 0; }
+    .student-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+    .search-field { margin-bottom: 14px; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 11px 9px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    th { color: var(--muted); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+    td { font-size: 14px; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .student-name { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+    .student-roll { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+    .status-actions { display: flex; gap: 6px; }
+    .status-btn { min-height: 34px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 8px; background: white; font-size: 13px; font-weight: 650; }
+    .status-btn.present.active { color: var(--green); border-color: #86efac; background: var(--green-bg); }
+    .status-btn.absent.active { color: var(--red); border-color: #fca5a5; background: var(--red-bg); }
+    .pill { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; font-size: 12px; line-height: 1.4; font-weight: 750; white-space: nowrap; }
+    .pill-green { color: var(--green); background: var(--green-bg); }
+    .pill-red { color: var(--red); background: var(--red-bg); }
+    .percent-cell { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .alert-card { border-color: #fecaca; }
+    .alert-card h2 { margin-bottom: 6px; }
+    .alert-subtitle { margin-bottom: 12px; color: var(--muted); font-size: 14px; }
+    .alert-list, .class-list { list-style: none; margin: 0; padding: 0; }
+    .alert-row, .class-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+    .alert-row:first-child, .class-row:first-child { border-top: 0; }
+    .alert-details { color: var(--muted); font-size: 13px; }
+    .alert-actions { display: flex; align-items: center; justify-content: end; gap: 6px; }
+    .empty-state { padding: 16px 8px; color: var(--muted); text-align: center; }
+    .empty-state p { margin: 0 0 12px; }
+    .success-state { margin: 0; color: var(--green); font-weight: 700; }
+    .stack { display: grid; gap: 16px; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 10px; }
+    .form-grid .field { margin: 0; }
+    .form-grid label { font-size: 13px; }
+    .form-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+    .form-error { margin: 8px 0 0; color: var(--red); font-size: 14px; font-weight: 600; }
+    .form-success { margin: 8px 0 0; color: var(--green); font-size: 14px; font-weight: 600; }
+    .guide-list { margin: 0; padding: 0; list-style: none; }
+    .guide-list li { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+    .guide-step { width: 25px; height: 25px; flex: 0 0 25px; display: grid; place-items: center; border-radius: 50%; color: var(--muted); background: #f1f5f9; font-size: 13px; font-weight: 750; }
+    .guide-done .guide-step { color: var(--green); background: var(--green-bg); }
+    .notice { margin-bottom: 18px; padding: 15px 17px; border: 1px solid; border-radius: 12px; font-weight: 650; }
+    .notice-red { color: #991b1b; border-color: #fecaca; background: #fff1f2; }
+    .notice-green { color: #166534; border-color: #bbf7d0; background: #f0fdf4; }
+    .student-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 22px 0; }
+    .student-stat { padding: 18px; }
+    .student-stat .summary-value { font-size: 25px; }
+    .student-history td:last-child, .student-history th:last-child { text-align: right; }
+    .page-footer { margin-top: 22px; color: var(--muted); font-size: 13px; text-align: center; }
+    .toast { margin: 0 0 16px; padding: 11px 14px; border-radius: 10px; color: #1e3a8a; background: #dbeafe; }
+    .toast.error { color: #991b1b; background: var(--red-bg); }
+    [hidden] { display: none !important; }
+    @media (max-width: 820px) {
+      .summary-grid, .student-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .content-grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px) {
+      .topbar { min-height: 64px; padding-inline: 12px; }
+      .brand-name { font-size: 18px; }
+      .top-user { gap: 7px; }
+      .user-name { max-width: 125px; font-size: 14px; }
+      .top-user .button { padding-inline: 9px; font-size: 13px; }
+      .page { padding: 21px 13px 34px; }
+      .card { padding: 17px; border-radius: 15px; }
+      .dashboard-head { display: block; }
+      .dashboard-head > .button { margin-top: 13px; }
+      .toolbar, .toolbar-group { align-items: stretch; }
+      .toolbar-group { width: 100%; }
+      .toolbar .field, .toolbar .field.date-field { flex: 1 1 135px; width: auto; }
+      .toolbar .threshold-field { flex-basis: 120px; }
+      .summary-grid, .student-summary { gap: 9px; }
+      .summary-card, .student-stat { padding: 13px; }
+      .summary-value, .student-stat .summary-value { font-size: 22px; }
+      .student-controls { align-items: stretch; }
+      .student-controls .button { flex: 1 1 125px; }
+      .actions { flex-wrap: wrap; align-items: stretch; }
+      .table-wrap { margin-inline: -3px; width: calc(100% + 6px); }
+      th, td { padding: 9px 6px; }
+      .status-actions { flex-direction: column; }
+      .status-btn { min-width: 64px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-actions .button { width: 100%; }
+      .alert-actions { flex-wrap: wrap; }
+    }
+    @media (max-width: 380px) {
+      .page { padding-inline: 10px; }
+      .card { padding: 14px; }
+      .top-user { gap: 5px; }
+      .user-name { max-width: 88px; font-size: 13px; }
+      .summary-grid, .student-summary { gap: 7px; }
+      .summary-card, .student-stat { padding: 11px; }
+      .summary-label { font-size: 12px; }
+      .summary-value, .student-stat .summary-value { font-size: 20px; }
+      .student-controls .button { padding-inline: 8px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" aria-label="AttendEase home">
+      <span class="brand-mark" aria-hidden="true">A</span>
+      <span class="brand-name">AttendEase</span>
+    </div>
+    <div class="top-user" id="topUser" hidden>
+      <span class="user-name" id="topUserName"></span>
+      <button class="button button-outline button-small" id="logoutButton" type="button">Log out</button>
+    </div>
+  </header>
+  <main class="page">
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <section class="login-wrap" id="loginScreen" aria-labelledby="loginTitle">
+      <div class="card login-card">
+        <h1 id="loginTitle">Welcome to AttendEase</h1>
+        <p class="intro">Sign in to view or manage class attendance.</p>
+        <form id="loginForm">
+          <div class="field">
+            <label for="loginName">Your name</label>
+            <input id="loginName" autocomplete="name" maxlength="80" required placeholder="Enter your name">
+          </div>
+          <div class="field" id="loginRoleField">
+            <label for="loginRole">Role</label>
+            <select id="loginRole">
+              <option value="faculty">Faculty</option>
+              <option value="admin">Administrator</option>
+              <option value="student">Student</option>
+            </select>
+          </div>
+          <div class="field" id="studentRollField" hidden>
+            <label for="loginRoll">Roll number</label>
+            <input id="loginRoll" maxlength="40" autocomplete="off" placeholder="Enter your roll number">
+          </div>
+          <p class="form-error" id="loginError" role="alert" hidden></p>
+          <button class="button button-primary button-block" type="submit">Continue</button>
+        </form>
+        <p class="demo-note">Your data is stored only in this browser.</p>
+      </div>
+    </section>
+
+    <section class="dashboard" id="facultyScreen" hidden aria-labelledby="facultyTitle">
+      <div class="dashboard-head">
+        <div>
+          <h1 id="facultyTitle">Attendance dashboard</h1>
+          <p>Set up your classes, record attendance, and support students.</p>
+        </div>
+        <button class="button button-outline" id="exportButton" type="button">Export CSV</button>
+      </div>
+
+      <section class="card" id="firstRunGuide" aria-labelledby="guideTitle" hidden>
+        <h2 id="guideTitle">Getting started</h2>
+        <ol class="guide-list">
+          <li id="guideClass"><span class="guide-step">1</span><span>Add a class</span></li>
+          <li id="guideStudents"><span class="guide-step">2</span><span>Add students</span></li>
+          <li id="guideAttendance"><span class="guide-step">3</span><span>Mark attendance</span></li>
+        </ol>
+      </section>
+
+      <div class="content-grid" style="margin:18px 0">
+        <section class="card stack" aria-label="Class and student setup">
+          <div>
+            <h2>Add a class</h2>
+            <form id="addClassForm">
+              <div class="field">
+                <label for="newClassName">Class name</label>
+                <input id="newClassName" maxlength="60" required>
+              </div>
+              <button class="button button-primary" type="submit">Add class</button>
+              <p class="form-error" id="classError" role="alert" hidden></p>
+            </form>
+          </div>
+          <div>
+            <h2>Your classes</h2>
+            <ul class="class-list" id="classList"></ul>
+          </div>
+        </section>
+        <section class="card stack">
+          <div>
+            <h2>Add a student</h2>
+            <form id="addStudentForm">
+              <div class="form-grid">
+                <div class="field"><label for="newStudentName">Name</label><input id="newStudentName" maxlength="80" required></div>
+                <div class="field"><label for="newStudentRoll">Roll number</label><input id="newStudentRoll" maxlength="40" required></div>
+                <div class="field"><label for="newStudentClass">Class</label><select id="newStudentClass" required></select></div>
+              </div>
+              <div class="form-actions"><button class="button button-primary" type="submit">Add student</button></div>
+              <p class="form-error" id="studentError" role="alert" hidden></p>
+            </form>
+          </div>
+          <div>
+            <h2>Add many students</h2>
+            <form id="bulkStudentForm">
+              <div class="field">
+                <label for="bulkStudents">One student per line: roll, name</label>
+                <textarea id="bulkStudents"></textarea>
+              </div>
+              <div class="field"><label for="bulkClass">Class</label><select id="bulkClass" required></select></div>
+              <button class="button button-primary" type="submit">Add students</button>
+              <div id="bulkResult" aria-live="polite"></div>
+            </form>
+          </div>
+        </section>
+      </div>
+
+      <section class="card" id="attendanceSection" aria-labelledby="attendanceHeading">
+        <div class="dashboard-head">
+          <div>
+            <h2 id="attendanceHeading">Take attendance</h2>
+            <p>Select a class and date. New attendance starts with everyone present.</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <div class="field"><label for="classSelect">Class</label><select id="classSelect"></select></div>
+            <div class="field date-field"><label for="attendanceDate">Date</label><input id="attendanceDate" type="date"></div>
+            <div class="field threshold-field"><label for="thresholdInput">Alert below (%)</label><input id="thresholdInput" type="number" min="1" max="100" step="1" inputmode="numeric"></div>
+          </div>
+        </div>
+        <div id="noClassesEmpty" class="empty-state" hidden>
+          <p>No classes yet. Add your first class to get started.</p>
+          <button class="button button-primary" type="button" data-focus="newClassName">Add your first class</button>
+        </div>
+        <div id="noStudentsEmpty" class="empty-state" hidden>
+          <p>No students in this class yet. Add the first student to take attendance.</p>
+          <button class="button button-primary" type="button" data-focus="newStudentName">Add the first student</button>
+        </div>
+        <div id="attendanceContent" hidden>
+          <div class="summary-grid" id="summaryGrid"></div>
+          <div class="content-grid">
+            <section class="card" aria-labelledby="rosterTitle">
+              <h2 id="rosterTitle">Students</h2>
+              <div class="student-controls">
+                <button class="button button-outline button-small" id="allPresentButton" type="button">Mark all present</button>
+                <button class="button button-outline button-small" id="allAbsentButton" type="button">Mark all absent</button>
+                <button class="button button-primary button-small" id="saveAttendanceButton" type="button">Save attendance</button>
+              </div>
+              <div class="field search-field">
+                <label for="studentSearch">Search by name or roll number</label>
+                <input id="studentSearch" type="search" placeholder="Start typing a name or roll number">
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th scope="col">Student</th><th scope="col">Overall</th><th scope="col">Status</th></tr></thead>
+                  <tbody id="studentRows"></tbody>
+                </table>
+              </div>
+              <div class="actions" style="margin-top:14px">
+                <button class="button button-primary" id="saveAttendanceButtonBottom" type="button">Save attendance</button>
+              </div>
+            </section>
+            <aside class="card alert-card" aria-labelledby="lowAttendanceTitle">
+              <h2 id="lowAttendanceTitle">Low attendance</h2>
+              <p class="alert-subtitle" id="alertSubtitle"></p>
+              <div id="lowAttendanceContent"></div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="adminPanel" style="margin-top:18px" hidden aria-label="Administrator controls">
+        <div class="section-heading">
+          <h2>Manage students</h2>
+          <button class="button button-danger button-small" id="clearDataButton" type="button">Clear all data</button>
+        </div>
+        <div id="adminStudentList"></div>
+      </section>
+      <p class="page-footer">Your data is stored only in this browser.</p>
+    </section>
+
+    <section class="dashboard" id="studentScreen" hidden aria-labelledby="studentTitle">
+      <div class="dashboard-head">
+        <div><h1 id="studentTitle">My attendance</h1><p id="studentClassName"></p></div>
+        <button class="button button-outline" id="studentExportButton" type="button">Export my CSV</button>
+      </div>
+      <div id="studentAdvice" role="status" aria-live="polite"></div>
+      <div class="student-summary" id="studentSummary"></div>
+      <section class="card" aria-labelledby="historyTitle">
+        <h2 id="historyTitle">Attendance history</h2>
+        <div class="table-wrap">
+          <table class="student-history">
+            <thead><tr><th scope="col">Date</th><th scope="col">Status</th></tr></thead>
+            <tbody id="studentHistoryRows"></tbody>
+          </table>
+        </div>
+      </section>
+      <p class="page-footer">Your data is stored only in this browser.</p>
+    </section>
+  </main>
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "attendease.v1";
+      const DEFAULT_LIMIT = 75;
+      const $ = (id) => document.getElementById(id);
+      const today = localDateString(new Date());
+      let draft = {};
+      let toastTimer;
+      let state = loadState();
+
+      function localDateString(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      }
+
+      function escapeHTML(value) {
+        return String(value).replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        })[char]);
+      }
+
+      function emptyState(user = null) {
+        return { user, classes: [], students: [], records: {}, threshold: DEFAULT_LIMIT };
+      }
+
+      function loadState() {
+        let stored;
+        try {
+          stored = localStorage.getItem(STORAGE_KEY);
+        } catch (error) {
+          showToast("Browser storage is unavailable. Your changes cannot be saved.", true);
+          return emptyState();
+        }
+        if (!stored) {
+          const initial = emptyState();
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(initial)); }
+          catch (error) { showToast("Browser storage is unavailable. Your changes cannot be saved.", true); }
+          return initial;
+        }
+        try {
+          const parsed = JSON.parse(stored);
+          if (!parsed || !Array.isArray(parsed.classes) || !Array.isArray(parsed.students) ||
+              !parsed.records || typeof parsed.records !== "object") throw new TypeError("Invalid saved data.");
+          return {
+            user: parsed.user && typeof parsed.user === "object" ? parsed.user : null,
+            classes: parsed.classes.filter((item) => typeof item === "string"),
+            students: parsed.students.filter((item) => item && typeof item.id === "string"),
+            records: parsed.records,
+            threshold: Number.isInteger(Number(parsed.threshold)) ? Math.min(100, Math.max(1, Number(parsed.threshold))) : DEFAULT_LIMIT
+          };
+        } catch (error) {
+          showToast("Saved data could not be read. Starting with an empty attendance tracker.", true);
+          const initial = emptyState();
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(initial)); }
+          catch (storageError) { showToast("Browser storage is unavailable. Your changes cannot be saved.", true); }
+          return initial;
+        }
+      }
+
+      function saveState(nextState = state) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+          state = nextState;
+          return true;
+        } catch (error) {
+          showToast("Could not save data in browser storage. Check available storage space.", true);
+          return false;
+        }
+      }
+
+      function showToast(message, isError = false) {
+        const toast = $("toast");
+        toast.textContent = message;
+        toast.classList.toggle("error", isError);
+        toast.hidden = false;
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => { toast.hidden = true; }, 4000);
+      }
+
+      function setFormMessage(id, message, isError = true) {
+        const node = $(id);
+        node.textContent = message;
+        node.className = isError ? "form-error" : "form-success";
+        node.hidden = !message;
+      }
+
+      function classNames() {
+        return [...state.classes].sort((a, b) => a.localeCompare(b));
+      }
+
+      function currentClassStudents(cls = $("classSelect").value) {
+        return state.students.filter((student) => student.cls === cls).sort((a, b) => a.roll.localeCompare(b.roll));
+      }
+
+      function recordsForClass(cls) {
+        if (!cls) return [];
+        return Object.keys(state.records).filter((key) => key.endsWith(`|${cls}`))
+          .map((key) => ({ key, date: key.slice(0, 10), attendance: state.records[key] }))
+          .sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      function statsFor(student) {
+        const rows = recordsForClass(student.cls);
+        const total = rows.reduce((count, row) => count + (Object.hasOwn(row.attendance, student.id) ? 1 : 0), 0);
+        const attended = rows.reduce((count, row) => count + (row.attendance[student.id] === "P" ? 1 : 0), 0);
+        return { attended, total, missed: total - attended, percent: total ? Math.round(attended / total * 1000) / 10 : null };
+      }
+
+      function makeId() {
+        return window.crypto && typeof window.crypto.randomUUID === "function"
+          ? window.crypto.randomUUID() : `student-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+
+      function roleLabel(role) {
+        return role === "admin" ? "Administrator" : role === "student" ? "Student" : "Faculty";
+      }
+
+      function render() {
+        const loggedIn = Boolean(state.user);
+        $("loginScreen").hidden = loggedIn;
+        $("facultyScreen").hidden = !loggedIn || state.user.role === "student";
+        $("studentScreen").hidden = !loggedIn || state.user.role !== "student";
+        $("topUser").hidden = !loggedIn;
+        $("topUserName").textContent = loggedIn ? `${state.user.name} · ${roleLabel(state.user.role)}` : "";
+        if (!loggedIn) return;
+        if (state.user.role === "student") {
+          renderStudentDashboard();
+          return;
+        }
+        $("adminPanel").hidden = false;
+        $("clearDataButton").hidden = state.user.role !== "admin";
+        renderSetup();
+        renderAttendance();
+        renderAdminStudents();
+      }
+
+      function fillSelect(id, values, selected) {
+        const select = $(id);
+        select.innerHTML = values.map((value) => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`).join("");
+        if (values.includes(selected)) select.value = selected;
+        select.disabled = values.length === 0;
+      }
+
+      function renderSetup() {
+        const classes = classNames();
+        const selected = $("classSelect").value;
+        const studentClass = $("newStudentClass").value;
+        const bulkClass = $("bulkClass").value;
+        fillSelect("classSelect", classes, selected);
+        fillSelect("newStudentClass", classes, studentClass || classes[0]);
+        fillSelect("bulkClass", classes, bulkClass || classes[0]);
+        $("attendanceDate").max = today;
+        if (!$("attendanceDate").value) $("attendanceDate").value = today;
+        $("thresholdInput").value = String(state.threshold);
+
+        const classList = $("classList");
+        if (!classes.length) {
+          classList.innerHTML = `<li class="empty-state"><p>No classes yet. Add your first class above.</p><button class="button button-outline button-small" type="button" data-focus="newClassName">Add a class</button></li>`;
+        } else {
+          classList.innerHTML = classes.map((cls) => {
+            const count = state.students.filter((student) => student.cls === cls).length;
+            return `<li class="class-row"><div><div class="student-name">${escapeHTML(cls)}</div><div class="student-roll">${count} ${count === 1 ? "student" : "students"}</div></div>${state.user.role === "admin" ? `<button class="button button-danger button-small" type="button" data-remove-class="${escapeHTML(cls)}">Remove class</button>` : ""}</li>`;
+          }).join("");
+        }
+
+        const noClasses = classes.length === 0;
+        const hasStudents = state.students.length > 0;
+        const studentIds = new Set(state.students.map((student) => student.id));
+        const hasAttendance = Object.values(state.records).some((attendance) =>
+          Object.keys(attendance).some((studentId) => studentIds.has(studentId))
+        );
+        $("firstRunGuide").hidden = classes.length > 0 && hasStudents && hasAttendance;
+        $("guideClass").classList.toggle("guide-done", classes.length > 0);
+        $("guideStudents").classList.toggle("guide-done", hasStudents);
+        $("guideAttendance").classList.toggle("guide-done", hasAttendance);
+        $("noClassesEmpty").hidden = !noClasses;
+        $("noStudentsEmpty").hidden = noClasses || currentClassStudents().length > 0;
+        $("attendanceContent").hidden = noClasses || currentClassStudents().length === 0;
+      }
+
+      function renderAttendance() {
+        const cls = $("classSelect").value;
+        const students = currentClassStudents(cls);
+        const date = $("attendanceDate").value;
+        const saved = state.records[`${date}|${cls}`] || {};
+        draft = {};
+        students.forEach((student) => { draft[student.id] = saved[student.id] || "P"; });
+        if (!cls || !students.length) return;
+
+        const allRecords = recordsForClass(cls);
+        const recordedDays = allRecords.filter((row) => students.some((student) => Object.hasOwn(row.attendance, student.id))).length;
+        const percentages = students.map(statsFor).map((stats) => stats.percent).filter((percent) => percent !== null);
+        const average = percentages.length ? percentages.reduce((sum, percent) => sum + percent, 0) / percentages.length : null;
+        const belowCount = students.filter((student) => {
+          const percent = statsFor(student).percent;
+          return percent !== null && percent < state.threshold;
+        }).length;
+        $("summaryGrid").innerHTML = [
+          ["Students in class", students.length],
+          ["Classes recorded", recordedDays],
+          ["Class average", average === null ? "No data" : `${(Math.round(average * 10) / 10).toFixed(1)}%`],
+          ["Below alert limit", belowCount]
+        ].map(([label, value]) => `<article class="card summary-card"><div class="summary-label">${escapeHTML(label)}</div><div class="summary-value">${escapeHTML(value)}</div></article>`).join("");
+        renderRoster(students);
+        renderLowAttendance(students);
+        const disabled = !date || date > today;
+        $("allPresentButton").disabled = disabled;
+        $("allAbsentButton").disabled = disabled;
+        $("saveAttendanceButton").disabled = disabled;
+        $("saveAttendanceButtonBottom").disabled = disabled;
+      }
+
+      function renderRoster(students) {
+        const query = $("studentSearch").value.trim().toLocaleLowerCase();
+        const filtered = students.filter((student) => student.name.toLocaleLowerCase().includes(query) || student.roll.toLocaleLowerCase().includes(query));
+        if (!filtered.length) {
+          $("studentRows").innerHTML = `<tr><td class="empty-state" colspan="3"><p>${students.length ? "No students match your search." : "No students in this class yet."}</p>${students.length ? "" : `<button class="button button-outline button-small" type="button" data-focus="newStudentName">Add a student</button>`}</td></tr>`;
+          return;
+        }
+        $("studentRows").innerHTML = filtered.map((student) => {
+          const stats = statsFor(student);
+          const low = stats.percent !== null && stats.percent < state.threshold;
+          const percent = stats.percent === null ? `<span class="muted">No data</span>` :
+            `<span>${stats.percent.toFixed(1)}%</span>${low ? `<span class="pill pill-red">Low</span>` : ""}`;
+          return `<tr>
+            <td><div class="student-name">${escapeHTML(student.name)}</div><div class="student-roll">${escapeHTML(student.roll)}</div></td>
+            <td><div class="percent-cell">${percent}</div></td>
+            <td><div class="status-actions" role="group" aria-label="Attendance for ${escapeHTML(student.name)}">
+              <button class="status-btn present${draft[student.id] === "P" ? " active" : ""}" type="button" data-student-id="${escapeHTML(student.id)}" data-status="P" aria-pressed="${draft[student.id] === "P"}">Present</button>
+              <button class="status-btn absent${draft[student.id] === "A" ? " active" : ""}" type="button" data-student-id="${escapeHTML(student.id)}" data-status="A" aria-pressed="${draft[student.id] === "A"}">Absent</button>
+            </div></td>
+          </tr>`;
+        }).join("");
+      }
+
+      function renderLowAttendance(students) {
+        const recorded = students.some((student) => statsFor(student).total > 0);
+        const low = students.map((student) => ({ student, stats: statsFor(student) }))
+          .filter(({ stats }) => stats.percent !== null && stats.percent < state.threshold)
+          .sort((a, b) => a.stats.percent - b.stats.percent);
+        $("alertSubtitle").textContent = `Alert limit: ${state.threshold}% in ${$("classSelect").value}.`;
+        if (!recorded) {
+          $("lowAttendanceContent").innerHTML = `<div class="empty-state"><p>No attendance recorded yet.</p><button class="button button-outline button-small" type="button" data-focus="attendanceDate">Choose a date to mark attendance</button></div>`;
+          return;
+        }
+        if (!low.length) {
+          $("lowAttendanceContent").innerHTML = `<p class="success-state">Everyone is above the limit</p>`;
+          return;
+        }
+        $("lowAttendanceContent").innerHTML = `<ul class="alert-list">${low.map(({ student, stats }) => {
+          const message = `Dear ${student.name}, your attendance in ${student.cls} is ${stats.percent.toFixed(1)}%, which is below the required ${state.threshold}%. Please attend regularly.`;
+          return `<li class="alert-row">
+            <div><div class="student-name">${escapeHTML(student.name)}</div><div class="alert-details">${escapeHTML(student.roll)} · ${stats.attended}/${stats.total} attended</div></div>
+            <div class="alert-actions"><span class="pill pill-red">${stats.percent.toFixed(1)}%</span><button class="button button-outline button-small" type="button" data-copy-message="${escapeHTML(message)}">Copy message</button></div>
+          </li>`;
+        }).join("")}</ul>`;
+      }
+
+      function renderAdminStudents() {
+        const students = [...state.students].sort((a, b) => a.cls.localeCompare(b.cls) || a.roll.localeCompare(b.roll));
+        if (!students.length) {
+          $("adminStudentList").innerHTML = `<div class="empty-state"><p>No students yet. Add students using the forms above.</p><button class="button button-outline button-small" type="button" data-focus="newStudentName">Add a student</button></div>`;
+          return;
+        }
+        $("adminStudentList").innerHTML = students.map((student) =>
+          `<div class="class-row"><div><div class="student-name">${escapeHTML(student.name)}</div><div class="student-roll">${escapeHTML(student.roll)} · ${escapeHTML(student.cls)}</div></div><div class="alert-actions"><button class="button button-outline button-small" type="button" data-edit-id="${escapeHTML(student.id)}">Edit</button>${state.user.role === "admin" ? `<button class="button button-danger button-small" type="button" data-remove-student="${escapeHTML(student.id)}">Remove</button>` : ""}</div></div>`
+        ).join("");
+      }
+
+      function renderStudentDashboard() {
+        const student = state.students.find((item) => item.id === state.user.studentId);
+        if (!student) {
+          $("studentClassName").textContent = "Student record unavailable.";
+          $("studentAdvice").innerHTML = `<div class="notice notice-red">Your student record could not be found. Log out and contact your faculty.</div>`;
+          $("studentSummary").innerHTML = "";
+          $("studentHistoryRows").innerHTML = `<tr><td class="empty-state" colspan="2">No attendance recorded yet.</td></tr>`;
+          return;
+        }
+        const stats = statsFor(student);
+        $("studentClassName").textContent = `${student.cls} · ${student.roll}`;
+        if (stats.percent === null) {
+          $("studentAdvice").innerHTML = `<div class="notice notice-green">No attendance recorded yet.</div>`;
+        } else if (stats.percent < DEFAULT_LIMIT) {
+          const needed = Math.max(0, Math.ceil((DEFAULT_LIMIT * stats.total - 100 * stats.attended) / (100 - DEFAULT_LIMIT)));
+          $("studentAdvice").innerHTML = `<div class="notice notice-red">Your attendance is ${stats.percent.toFixed(1)}%. Attend the next ${needed} classes in a row to reach 75%.</div>`;
+        } else {
+          const canMiss = Math.max(0, Math.floor((100 * stats.attended - DEFAULT_LIMIT * stats.total) / DEFAULT_LIMIT));
+          $("studentAdvice").innerHTML = `<div class="notice notice-green">You can miss up to ${canMiss} more ${canMiss === 1 ? "class" : "classes"} and stay above 75%.</div>`;
+        }
+        $("studentSummary").innerHTML = [
+          ["Attendance", stats.percent === null ? "No data" : `${stats.percent.toFixed(1)}%`],
+          ["Classes attended", stats.attended], ["Classes missed", stats.missed], ["Total classes", stats.total]
+        ].map(([label, value]) => `<article class="card student-stat"><div class="summary-label">${escapeHTML(label)}</div><div class="summary-value">${escapeHTML(value)}</div></article>`).join("");
+        const history = recordsForClass(student.cls).filter((row) => Object.hasOwn(row.attendance, student.id)).reverse();
+        $("studentHistoryRows").innerHTML = history.length ? history.map((row) =>
+          `<tr><td>${escapeHTML(row.date)}</td><td><span class="pill ${row.attendance[student.id] === "P" ? "pill-green" : "pill-red"}">${row.attendance[student.id] === "P" ? "Present" : "Absent"}</span></td></tr>`
+        ).join("") : `<tr><td class="empty-state" colspan="2">No attendance recorded yet.</td></tr>`;
+      }
+
+      function saveAttendance() {
+        const date = $("attendanceDate").value;
+        const cls = $("classSelect").value;
+        if (!date || date > today) {
+          showToast("Choose today or an earlier date.", true);
+          return;
+        }
+        const key = `${date}|${cls}`;
+        const attendance = { ...(state.records[key] || {}) };
+        currentClassStudents(cls).forEach((student) => { attendance[student.id] = draft[student.id] || "P"; });
+        if (saveState({ ...state, records: { ...state.records, [key]: attendance } })) {
+          render();
+          showToast("Attendance saved. The alert is up to date.");
+        }
+      }
+
+      function csvCell(value) {
+        let text = String(value ?? "");
+        if (/^[=+\-@]/.test(text)) text = `'${text}`;
+        return `"${text.replace(/"/g, '""')}"`;
+      }
+
+      function downloadCSV(rows, filename) {
+        const content = [["Date", "Class", "Roll", "Name", "Status"], ...rows]
+          .map((row) => row.map(csvCell).join(",")).join("\r\n");
+        const url = URL.createObjectURL(new Blob(["\ufeff", content], { type: "text/csv;charset=utf-8" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function exportClassCSV() {
+        const cls = $("classSelect").value;
+        const rows = [];
+        recordsForClass(cls).forEach((record) => currentClassStudents(cls).forEach((student) => {
+          if (Object.hasOwn(record.attendance, student.id)) rows.push([
+            record.date, cls, student.roll, student.name, record.attendance[student.id] === "P" ? "Present" : "Absent"
+          ]);
+        }));
+        downloadCSV(rows, `attendease-${cls.replace(/[^a-z0-9-]+/gi, "-") || "class"}.csv`);
+      }
+
+      function exportStudentCSV() {
+        const student = state.students.find((item) => item.id === state.user.studentId);
+        if (!student) {
+          showToast("Your student record could not be found.", true);
+          return;
+        }
+        const rows = [];
+        recordsForClass(student.cls).forEach((record) => {
+          if (Object.hasOwn(record.attendance, student.id)) rows.push([
+            record.date, student.cls, student.roll, student.name, record.attendance[student.id] === "P" ? "Present" : "Absent"
+          ]);
+        });
+        downloadCSV(rows, `attendease-${student.roll.replace(/[^a-z0-9-]+/gi, "-")}.csv`);
+      }
+
+      async function copyMessage(message) {
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(message);
+          } else {
+            const field = document.createElement("textarea");
+            field.value = message;
+            field.style.position = "fixed";
+            field.style.opacity = "0";
+            document.body.appendChild(field);
+            field.select();
+            const copied = document.execCommand("copy");
+            field.remove();
+            if (!copied) throw new Error("Clipboard copy was not permitted.");
+          }
+          showToast("Message copied.");
+        } catch (error) {
+          showToast("Could not copy the message. Check browser clipboard permissions.", true);
+        }
+      }
+
+      $("loginRole").addEventListener("change", () => {
+        const studentLogin = $("loginRole").value === "student";
+        $("studentRollField").hidden = !studentLogin;
+        $("loginName").placeholder = studentLogin ? "Enter the name faculty recorded" : "Enter your name";
+        $("loginError").hidden = true;
+      });
+
+      $("loginForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = $("loginName").value.trim();
+        const role = $("loginRole").value;
+        if (!name) return;
+        if (role === "student") {
+          const roll = $("loginRoll").value.trim();
+          const matches = state.students.filter((student) =>
+            student.roll.trim().toLocaleLowerCase() === roll.toLocaleLowerCase() &&
+            student.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase()
+          );
+          if (matches.length !== 1) {
+            $("loginError").textContent = "We could not find you. Ask your faculty to add you first.";
+            $("loginError").hidden = false;
+            return;
+          }
+          state.user = { name: matches[0].name, role, studentId: matches[0].id };
+        } else {
+          state.user = { name, role, studentId: null };
+        }
+        if (saveState()) render();
+      });
+
+      $("logoutButton").addEventListener("click", () => {
+        if (saveState({ ...state, user: null })) render();
+      });
+
+      $("addClassForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = $("newClassName").value.trim();
+        if (!name) {
+          setFormMessage("classError", "Enter a class name.");
+          return;
+        }
+        if (state.classes.some((cls) => cls.trim().toLocaleLowerCase() === name.toLocaleLowerCase())) {
+          setFormMessage("classError", "That class already exists.");
+          return;
+        }
+        if (saveState({ ...state, classes: [...state.classes, name] })) {
+          $("newClassName").value = "";
+          setFormMessage("classError", "");
+          render();
+          $("classSelect").value = name;
+          renderSetup();
+          renderAttendance();
+          showToast("Class added.");
+        }
+      });
+
+      $("addStudentForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = $("newStudentName").value.trim();
+        const roll = $("newStudentRoll").value.trim();
+        const cls = $("newStudentClass").value;
+        if (!name || !roll || !cls) {
+          setFormMessage("studentError", "Enter a name, roll number, and class.");
+          return;
+        }
+        const duplicate = state.students.some((student) =>
+          student.cls === cls && student.roll.trim().toLocaleLowerCase() === roll.toLocaleLowerCase()
+        );
+        if (duplicate) {
+          setFormMessage("studentError", "This roll number is already used in this class.");
+          return;
+        }
+        const nextState = { ...state, students: [...state.students, { id: makeId(), name, roll, cls }] };
+        if (saveState(nextState)) {
+          $("addStudentForm").reset();
+          setFormMessage("studentError", "");
+          render();
+          showToast("Student added.");
+        }
+      });
+
+      $("bulkStudentForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const cls = $("bulkClass").value;
+        const lines = $("bulkStudents").value.split(/\r?\n/);
+        if (!cls) {
+          $("bulkResult").innerHTML = `<p class="form-error">Add a class before importing students.</p>`;
+          return;
+        }
+        const additions = [];
+        const skipped = [];
+        lines.forEach((rawLine, index) => {
+          const line = rawLine.trim();
+          if (!line) return;
+          const comma = line.indexOf(",");
+          if (comma < 1 || comma === line.length - 1) {
+            skipped.push({ line: index + 1, reason: "Expected roll, name." });
+            return;
+          }
+          const roll = line.slice(0, comma).trim();
+          const name = line.slice(comma + 1).trim();
+          if (!roll || !name) {
+            skipped.push({ line: index + 1, reason: "Roll number and name are required." });
+          } else if ([...state.students, ...additions].some((student) =>
+            student.cls === cls && student.roll.trim().toLocaleLowerCase() === roll.toLocaleLowerCase()
+          )) {
+            skipped.push({ line: index + 1, reason: "Duplicate roll number in this class." });
+          } else {
+            additions.push({ id: makeId(), name, roll, cls });
+          }
+        });
+        const result = { ...state, students: [...state.students, ...additions] };
+        if (!saveState(result)) return;
+        $("bulkStudents").value = "";
+        render();
+        $("bulkResult").innerHTML = `<p class="form-success">${additions.length} ${additions.length === 1 ? "student" : "students"} added.</p>${skipped.length ? `<ul class="form-error">${skipped.map((item) => `<li>Line ${item.line}: ${escapeHTML(item.reason)}</li>`).join("")}</ul>` : ""}`;
+      });
+
+      $("classSelect").addEventListener("change", () => {
+        $("studentSearch").value = "";
+        renderSetup();
+        renderAttendance();
+      });
+      $("attendanceDate").addEventListener("change", () => {
+        if ($("attendanceDate").value > today) {
+          $("attendanceDate").value = today;
+          showToast("Future dates are not available.", true);
+        }
+        renderAttendance();
+      });
+      $("thresholdInput").addEventListener("change", () => {
+        const value = Number($("thresholdInput").value);
+        if (!Number.isInteger(value) || value < 1 || value > 100) {
+          $("thresholdInput").value = String(state.threshold);
+          showToast("Alert limit must be a whole number from 1 to 100.", true);
+          return;
+        }
+        if (saveState({ ...state, threshold: value })) renderAttendance();
+      });
+      $("studentSearch").addEventListener("input", () => renderRoster(currentClassStudents()));
+      $("studentRows").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-student-id]");
+        if (!button || !Object.hasOwn(draft, button.dataset.studentId)) return;
+        draft[button.dataset.studentId] = button.dataset.status;
+        renderRoster(currentClassStudents());
+      });
+      $("allPresentButton").addEventListener("click", () => {
+        currentClassStudents().forEach((student) => { draft[student.id] = "P"; });
+        renderRoster(currentClassStudents());
+      });
+      $("allAbsentButton").addEventListener("click", () => {
+        currentClassStudents().forEach((student) => { draft[student.id] = "A"; });
+        renderRoster(currentClassStudents());
+      });
+      $("saveAttendanceButton").addEventListener("click", saveAttendance);
+      $("saveAttendanceButtonBottom").addEventListener("click", saveAttendance);
+      $("exportButton").addEventListener("click", exportClassCSV);
+      $("studentExportButton").addEventListener("click", exportStudentCSV);
+
+      $("classList").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-remove-class]");
+        if (!button) return;
+        const cls = button.dataset.removeClass;
+        if (!window.confirm(`Remove class "${cls}", its students, and all related attendance records?`)) return;
+        const removedIds = new Set(state.students.filter((student) => student.cls === cls).map((student) => student.id));
+        const records = {};
+        Object.entries(state.records).forEach(([key, attendance]) => {
+          if (!key.endsWith(`|${cls}`)) {
+            const next = { ...attendance };
+            removedIds.forEach((id) => { delete next[id]; });
+            records[key] = next;
+          }
+        });
+        const nextState = {
+          ...state,
+          classes: state.classes.filter((item) => item !== cls),
+          students: state.students.filter((student) => student.cls !== cls),
+          records
+        };
+        if (saveState(nextState)) {
+          $("studentSearch").value = "";
+          render();
+          showToast("Class and its related data removed.");
+        }
+      });
+
+      $("adminStudentList").addEventListener("click", (event) => {
+        const removeButton = event.target.closest("button[data-remove-student]");
+        if (removeButton) {
+          const student = state.students.find((item) => item.id === removeButton.dataset.removeStudent);
+          if (!student || !window.confirm(`Remove ${student.name} (${student.roll}) and their attendance records?`)) return;
+          const records = {};
+          Object.entries(state.records).forEach(([key, attendance]) => {
+            const next = { ...attendance };
+            delete next[student.id];
+            if (Object.keys(next).length) records[key] = next;
+          });
+          if (saveState({ ...state, students: state.students.filter((item) => item.id !== student.id), records })) {
+            render();
+            showToast("Student removed.");
+          }
+          return;
+        }
+        const editButton = event.target.closest("button[data-edit-id]");
+        if (!editButton) return;
+        const student = state.students.find((item) => item.id === editButton.dataset.editId);
+        if (!student) return;
+        const name = window.prompt("Edit student name:", student.name);
+        if (name === null) return;
+        const roll = window.prompt("Edit student roll number:", student.roll);
+        if (roll === null) return;
+        const cleanName = name.trim();
+        const cleanRoll = roll.trim();
+        if (!cleanName || !cleanRoll) {
+          showToast("Name and roll number cannot be empty.", true);
+          return;
+        }
+        const duplicate = state.students.some((item) => item.id !== student.id && item.cls === student.cls &&
+          item.roll.trim().toLocaleLowerCase() === cleanRoll.toLocaleLowerCase());
+        if (duplicate) {
+          showToast("That roll number is already used in this class.", true);
+          return;
+        }
+        const updated = state.students.map((item) => item.id === student.id ? { ...item, name: cleanName, roll: cleanRoll } : item);
+        if (saveState({ ...state, students: updated })) {
+          render();
+          showToast("Student details updated.");
+        }
+      });
+
+      $("clearDataButton").addEventListener("click", () => {
+        if (!window.confirm("Clear all classes, students, attendance records, and saved login data?")) return;
+        if (saveState(emptyState())) {
+          $("loginForm").reset();
+          $("loginRoll").value = "";
+          $("studentRollField").hidden = true;
+          $("bulkResult").textContent = "";
+          render();
+          showToast("All data cleared.");
+        }
+      });
+
+      document.addEventListener("click", (event) => {
+        const focusButton = event.target.closest("button[data-focus]");
+        if (focusButton) {
+          const target = $(focusButton.dataset.focus);
+          if (target) target.focus();
+          return;
+        }
+        const copyButton = event.target.closest("button[data-copy-message]");
+        if (copyButton) copyMessage(copyButton.dataset.copyMessage);
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>
